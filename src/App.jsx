@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import VaultInput from './components/VaultInput';
 import RiskVisualizer from './components/RiskVisualizer';
+import TokenList from './components/TokenList';
 import { fetchSafeData } from './utils/api';
 import './App.css';
 
@@ -57,6 +58,10 @@ function App() {
               Vault: {vaultAddress.substring(0, 6)}...{vaultAddress.substring(38)}
             </div>
             <RiskVisualizer data={data} />
+            <div className="assets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', width: '100%' }}>
+              <TokenList tokens={data.collateralBalances} title="Collateral Assets" />
+              <TokenList tokens={data.borrows} title="Borrowed Assets" />
+            </div>
           </div>
         )}
       </main>

@@ -1,0 +1,77 @@
+export const CashLensABI = [
+    {
+        "inputs": [
+            { "internalType": "address", "name": "safe", "type": "address" },
+            { "internalType": "address[]", "name": "debtServiceTokenPreference", "type": "address[]" }
+        ],
+        "name": "getSafeCashData",
+        "outputs": [
+            {
+                "components": [
+                    { "internalType": "enum Mode", "name": "mode", "type": "uint8" },
+                    {
+                        "components": [
+                            { "internalType": "address", "name": "token", "type": "address" },
+                            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+                        ],
+                        "internalType": "struct IDebtManager.TokenData[]",
+                        "name": "collateralBalances",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            { "internalType": "address", "name": "token", "type": "address" },
+                            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+                        ],
+                        "internalType": "struct IDebtManager.TokenData[]",
+                        "name": "borrows",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            { "internalType": "address", "name": "token", "type": "address" },
+                            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+                        ],
+                        "internalType": "struct IDebtManager.TokenData[]",
+                        "name": "tokenPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            { "internalType": "address[]", "name": "tokens", "type": "address[]" },
+                            { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
+                            { "internalType": "address", "name": "recipient", "type": "address" },
+                            { "internalType": "uint96", "name": "finalizeTime", "type": "uint96" }
+                        ],
+                        "internalType": "struct WithdrawalRequest",
+                        "name": "withdrawalRequest",
+                        "type": "tuple"
+                    },
+                    { "internalType": "uint256", "name": "totalCollateral", "type": "uint256" },
+                    { "internalType": "uint256", "name": "totalBorrow", "type": "uint256" },
+                    { "internalType": "uint256", "name": "maxBorrow", "type": "uint256" },
+                    { "internalType": "uint256", "name": "creditMaxSpend", "type": "uint256" },
+                    { "internalType": "uint256", "name": "spendingLimitAllowance", "type": "uint256" },
+                    { "internalType": "uint256", "name": "totalCashbackEarnedInUsd", "type": "uint256" },
+                    { "internalType": "uint256", "name": "incomingModeStartTime", "type": "uint256" },
+                    {
+                        "components": [
+                            { "internalType": "address[]", "name": "spendableTokens", "type": "address[]" },
+                            { "internalType": "uint256[]", "name": "spendableAmounts", "type": "uint256[]" },
+                            { "internalType": "uint256[]", "name": "amountsInUsd", "type": "uint256[]" },
+                            { "internalType": "uint256", "name": "totalSpendableInUsd", "type": "uint256" }
+                        ],
+                        "internalType": "struct DebitModeMaxSpend",
+                        "name": "debitMaxSpend",
+                        "type": "tuple"
+                    }
+                ],
+                "internalType": "struct SafeCashData",
+                "name": "safeCashData",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];

@@ -1,0 +1,131 @@
+.risk-visualizer {
+    width: 100%;
+    max-width: 800px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    margin: 0 0 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-card .value {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.gauge-container {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+}
+
+.gauge-container h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.gauge-bg {
+    height: 24px;
+    background: #374151;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.gauge-fill {
+    height: 100%;
+    border-radius: 12px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;
+}
+
+.gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+}
+
+.risk-metrics {
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid #374151;
+    padding-top: 1.5rem;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.metric span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.metric strong {
+    font-size: 1.25rem;
+}
+
+.risk-alert {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}

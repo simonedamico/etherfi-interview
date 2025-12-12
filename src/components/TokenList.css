@@ -63,7 +63,6 @@
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(99, 102, 241, 0.3);
-    /* Accent color hint */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -76,9 +75,7 @@
     align-items: center;
     gap: 1rem;
     flex: 1;
-    /* Allow it to take available space */
     min-width: 0;
-    /* Enable shrinking */
 }
 
 .token-icon {
@@ -91,12 +88,18 @@
     padding: 2px;
     transition: transform 0.2s;
     flex-shrink: 0;
-    /* Prevent icon from squishing */
 }
 
 .token-row:hover .token-icon {
     transform: scale(1.05);
     border-color: var(--accent-color);
+}
+
+.token-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
 }
 
 .token-symbol {
@@ -108,16 +111,34 @@
     text-overflow: ellipsis;
 }
 
-.token-amount {
-    font-family: 'Geist Mono', 'Roboto Mono', monospace;
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-    white-space: nowrap;
-    /* Keep amount on one line */
+.token-unit-price {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-family: 'Geist Mono', monospace;
+}
+
+.token-values {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
     margin-left: 1rem;
-    /* Ensure space between symbol and amount */
+}
+
+.token-total-value {
+    font-family: 'Geist Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.token-amount {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-shadow: none;
+    white-space: nowrap;
 }
 
 .loading-tokens {

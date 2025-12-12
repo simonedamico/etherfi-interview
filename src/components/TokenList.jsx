@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { fetchTokenMetadata } from '../utils/api';
 import './TokenList.css';
 
-const TokenList = ({ tokens, title = "Collateral Assets" }) => {
+const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
     const [enrichedTokens, setEnrichedTokens] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -18,18 +18,32 @@ const TokenList = ({ tokens, title = "Collateral Assets" }) => {
             const provider = new ethers.JsonRpcProvider('https://rpc.scroll.io');
 
             try {
+                // Create price map (prices are 6 decimals USD)
+                const priceMap = {};
+                if (prices) {
+                    prices.forEach(p => {
+                        priceMap[p.token.toLowerCase()] = Number(p.amount) / 1e6;
+                    });
+                }
+
                 const results = await Promise.all(
                     tokens.map(async (t) => {
                         const tokenAddress = t.token || t[0]; // Handle named or positional
                         const amount = t.amount || t[1];
 
                         const { symbol, decimals } = await fetchTokenMetadata(tokenAddress, provider);
+                        const formattedAmount = ethers.formatUnits(amount, decimals);
+                        const unitPrice = priceMap[tokenAddress.toLowerCase()] || 0;
+                        const totalValue = Number(formattedAmount) * unitPrice;
+
                         return {
                             token: tokenAddress,
                             amount: amount,
                             symbol,
                             decimals,
-                            formattedAmount: ethers.formatUnits(amount, decimals)
+                            formattedAmount,
+                            unitPrice,
+                            totalValue
                         };
                     })
                 );
@@ -80,11 +94,19 @@ const TokenList = ({ tokens, title = "Collateral Assets" }) => {
                                 alt={token.symbol}
                                 className="token-icon"
                             />
-                            <span className="token-symbol">{token.symbol}</span>
+                            <div className="token-details">
+                                <span className="token-symbol">{token.symbol}</span>
+                                <span className="token-unit-price">${token.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
                         </div>
-                        <span className="token-amount">
-                            {Number(token.formattedAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
+                        <div className="token-values">
+                            <span className="token-amount">
+                                {Number(token.formattedAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {token.symbol}
+                            </span>
+                            <span className="token-total-value">
+                                ${token.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
                     </div>
                 ))}
             </div>

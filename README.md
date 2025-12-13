@@ -1,16 +1,48 @@
-# React + Vite
+# Ether.fi Cash Risk Visualizer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React application designed to help users visualize and simulate risk metrics for Ether.fi Cash vaults on the Scroll network.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Vault Analysis**: Fetch and display live on-chain data for any Cash Vault address.
+- **Risk Visualization**: View your current Debt, Max Borrowable amount, and Liquidation Health Factor in an interactive gauge.
+- **Price Simulation**: Edit the price of underlying collateral assets to simulate different market conditions (e.g., "What if ETH drops 50%?") and instantly see how it affects your liquidation risk.
 
-## React Compiler
+## Developer Quickstart
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js (v18 or higher recommended)
+- npm (Node Package Manager)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Installation
+
+1. Clone the repository and navigate to the project directory:
+   ```bash
+   cd etherfi-interview
+   ```
+
+2. Install the necessary dependencies:
+   ```bash
+   npm install
+   ```
+
+### Running Locally
+
+To start the local development server:
+
+```bash
+npm run dev
+```
+
+Open your browser and navigate to `http://localhost:5173` to verify the application is running.
+
+### Building for Production
+
+To create an optimized build for deployment:
+
+```bash
+npm run build
+```
+
+The production-ready assets will be output to the `dist` folder.

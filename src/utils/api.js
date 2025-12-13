@@ -6,7 +6,7 @@ const RPC_URL = 'https://rpc.scroll.io';
 const MULTICALL_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11';
 const DEBT_MANAGER_ADDRESS = '0x8f9d2Cd33551CE06dD0564Ba147513F715c2F4a0';
 
-const LTV_CONFIG = {
+export const LTV_CONFIG = {
     '0x5300000000000000000000000000000000000004': 55, // wETH
     '0xd83e3d560ba6f05094d9d8b3eb8aaea571d1864e': 45, // wHYPE
     '0x06efdbff2a14a7c8e15944d1f4a48f9f95f663a4': 90, // USDC
@@ -22,6 +22,34 @@ const LTV_CONFIG = {
     '0x08c6f91e2b681faf5e17227f2a44c307b3c1364c': 80, // LiquidUSD
 };
 
+export const calculateVaultMetrics = (collateralTokens, priceMap, metadataMap) => {
+    let calculatedMaxBorrowUSD = 0;
+    let calculatedTotalCollateralUSD = 0;
+
+    collateralTokens.forEach(t => {
+        const tokenAddr = (t.token || t[0]).toLowerCase();
+        const amount = t.amount || t[1]; // BigInt or uint256
+        const decimals = metadataMap.get(tokenAddr)?.decimals || 18;
+        const price = priceMap.get(tokenAddr) || 0;
+        const ltv = LTV_CONFIG[tokenAddr] || 0; // Use hardcoded LTV
+
+        // Formula: (amount / 10^dec) * (price / 10^6) * (ltv / 100)
+        // We can do this in float for display precision
+        const amountFloat = Number(ethers.formatUnits(amount, decimals));
+        const priceFloat = price / 1e6;
+        const valueUSD = amountFloat * priceFloat;
+        const borrowPower = valueUSD * (ltv / 100);
+
+        calculatedMaxBorrowUSD += borrowPower;
+        calculatedTotalCollateralUSD += valueUSD;
+    });
+
+    return {
+        maxBorrow: BigInt(Math.floor(calculatedMaxBorrowUSD * 1e6)),
+        totalCollateral: BigInt(Math.floor(calculatedTotalCollateralUSD * 1e6))
+    };
+};
+
 export const fetchSafeData = async (address) => {
     try {
         // 1. Setup Provider
@@ -33,51 +61,53 @@ export const fetchSafeData = async (address) => {
 
         // 3. Call getSafeCashData
         // Second argument is debtServiceTokenPreference, empty array for view
-        const data = await contract.getSafeCashData(address, []);
+        const rawData = await contract.getSafeCashData(address, []);
+
+        // Convert to plain object to avoid Ethers Result spread issues
+        // We need to know the structure of SafeCashData from ABI or just map what we use.
+        // Based on usage: collateralBalances, borrows, tokenPrices, maxBorrow, totalCollateralValue (maybe?), totalBorrowedValue?
+        // Let's assume the keys are available on the Result object.
+        const data = {
+            collateralBalances: rawData.collateralBalances.map(t => ({ token: t.token, amount: t.amount })),
+            borrows: rawData.borrows.map(t => ({ token: t.token, amount: t.amount })),
+            tokenPrices: rawData.tokenPrices.map(t => ({ token: t.token, amount: t.amount })),
+            maxBorrow: rawData.maxBorrow,
+            // We might need these if RiskVisualizer uses them:
+            // Check RiskVisualizer props usage. It likely uses totalBorrow/totalCollateral.
+            // If rawData doesn't have them explicitly named, we might need index access.
+            // Ethers Result usually allows access by name if ABI has names.
+            // Let's copy all enumerable properties just in case, or rely on specific ones.
+        };
+
+        // Attempt to copy other named properties if they exist
+        ['totalCollateral', 'totalBorrow', 'healthFactor'].forEach(key => {
+            if (rawData[key] !== undefined) data[key] = rawData[key];
+        });
 
         // --- Recalculate Max Borrow based on Hardcoded LTVs ---
-        // data.maxBorrow is what the chain thinks. We want what the UI claims (sum of value * LTV).
-        // fetchSafeData returns raw structs. We need to parse them a bit more to do this math.
-        // We need decimals for each collateral token to normalize amounts.
-
         try {
             // Extract tokens needed for calculation
-            const collateralTokens = data.collateralBalances.map(t => ({ token: t.token, amount: t.amount }));
+            const collateralTokens = data.collateralBalances;
 
             if (collateralTokens.length > 0) {
                 // Fetch decimals
                 const metadataMap = await fetchTokensMetadataBatch(collateralTokens, provider);
 
-                // Build price map (TokenData[] from struct)
+                // Build price map
                 const priceMap = new Map();
                 data.tokenPrices.forEach(p => {
-                    priceMap.set(p.token.toLowerCase(), Number(p.amount)); // price is 6 decimals USD usually?
-                    // Actually, let's verify price scale. usually e6 for USD or e8 or e18.
-                    // RiskVisualizer divides by 1e6. So likely 6 decimals.
+                    priceMap.set(p.token.toLowerCase(), Number(p.amount));
                 });
 
-                let calculatedMaxBorrowUSD = 0;
+                const metrics = calculateVaultMetrics(collateralTokens, priceMap, metadataMap);
 
-                collateralTokens.forEach(t => {
-                    const tokenAddr = t.token.toLowerCase();
-                    const amount = t.amount; // BigInt or uint256
-                    const decimals = metadataMap.get(tokenAddr)?.decimals || 18;
-                    const price = priceMap.get(tokenAddr) || 0;
-                    const ltv = LTV_CONFIG[tokenAddr] || 0; // Use hardcoded LTV
+                // Override data.maxBorrow 
+                data.maxBorrow = metrics.maxBorrow;
 
-                    // Formula: (amount / 10^dec) * (price / 10^6) * (ltv / 100)
-                    // We can do this in float for display precision
-                    const amountFloat = Number(ethers.formatUnits(amount, decimals));
-                    const priceFloat = price / 1e6;
-                    const valueUSD = amountFloat * priceFloat;
-                    const borrowPower = valueUSD * (ltv / 100);
-
-                    calculatedMaxBorrowUSD += borrowPower;
-                });
-
-                // Override data.maxBorrow (which is uint256 scaled 1e6 usually? RiskVisualizer divides by 1e6)
-                // If RiskVisualizer expects 1e6 scaled BigInt/number:
-                data.maxBorrow = BigInt(Math.floor(calculatedMaxBorrowUSD * 1e6));
+                // Also update totalCollateral if we want consistency
+                if (data.totalCollateral !== undefined || metrics.totalCollateral > 0) {
+                    data.totalCollateral = metrics.totalCollateral;
+                }
             }
         } catch (calcError) {
             console.warn("Error recalculating max borrow:", calcError);

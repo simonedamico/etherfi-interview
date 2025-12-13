@@ -3,7 +3,46 @@ import { ethers } from 'ethers';
 import { fetchTokensMetadataBatch, fetchTokenLTVsBatch } from '../utils/api';
 import './TokenList.css';
 
-const TokenList = ({ tokens, prices, title = "Collateral Assets", configType = "collateral" }) => {
+const PriceInput = ({ initialValue, onSave }) => {
+    const [value, setValue] = useState(initialValue?.toFixed(2) || '0.00');
+
+    // Sync from props if external change happens (though strictly not needed if we want local override behavior only)
+    useEffect(() => {
+        setValue(initialValue?.toFixed(2) || '0.00');
+    }, [initialValue]);
+
+    const handleCommit = () => {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+            onSave(num);
+        } else {
+            // Revert on invalid
+            setValue(initialValue?.toFixed(2) || '0.00');
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.target.blur(); // Trigger blur to commit
+        }
+    };
+
+    return (
+        <div className="price-edit-container">
+            <span className="currency-symbol">$</span>
+            <input
+                type="text"
+                className="price-input"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={handleCommit}
+                onKeyDown={handleKeyDown}
+            />
+        </div>
+    );
+};
+
+const TokenList = ({ tokens, prices, title = "Collateral Assets", configType = "collateral", onPriceChange }) => {
     const [enrichedTokens, setEnrichedTokens] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -86,7 +125,17 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets", configType = "
 
     return (
         <div className="token-list-container">
-            <h3 className="token-list-header">{title}</h3>
+            <h3 className="token-list-header">
+                {title}
+                {configType === 'collateral' && (
+                    <div className="tooltip-container">
+                        <span className="tooltip-icon">?</span>
+                        <div className="tooltip-content">
+                            You can edit the price of collateral tokens to simulate the impact of price changes on your max borrow and liquidation risk.
+                        </div>
+                    </div>
+                )}
+            </h3>
             <div className="token-list">
                 {enrichedTokens.map((token, idx) => (
                     <div className="token-row" key={`${token.token}-${idx}`}>
@@ -116,7 +165,14 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets", configType = "
                                         <span className="token-ltv"> @ 4% APY</span>
                                     }
                                 </span>
-                                <span className="token-unit-price">${token.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                {configType === 'collateral' && onPriceChange ? (
+                                    <PriceInput
+                                        initialValue={token.unitPrice}
+                                        onSave={(val) => onPriceChange(token.token, val)}
+                                    />
+                                ) : (
+                                    <span className="token-unit-price">${token.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                )}
                             </div>
                         </div>
                         <div className="token-values">

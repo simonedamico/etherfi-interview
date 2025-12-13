@@ -59,8 +59,8 @@ function App() {
             </div>
             <RiskVisualizer data={data} />
             <div className="assets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', width: '100%' }}>
-              <TokenList tokens={data.collateralBalances} prices={data.tokenPrices} title="Collateral Assets" />
-              <TokenList tokens={data.borrows} prices={data.tokenPrices} title="Borrowed Assets" />
+              <TokenList tokens={data.collateralBalances} prices={data.tokenPrices} title="Collateral Assets" configType="collateral" />
+              <TokenList tokens={data.borrows} prices={data.tokenPrices} title="Borrowed Assets" configType="borrow" />
             </div>
           </div>
         )}

@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { fetchTokensMetadataBatch, fetchTokenLTVsBatch } from '../utils/api';
 import './TokenList.css';
 
-const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
+const TokenList = ({ tokens, prices, title = "Collateral Assets", configType = "collateral" }) => {
     const [enrichedTokens, setEnrichedTokens] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,19 +26,26 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
                     });
                 }
 
-                // Fetch metadata and LTVs in parallel
-                const [metadataMap, ltvMap] = await Promise.all([
-                    fetchTokensMetadataBatch(tokens, provider),
-                    fetchTokenLTVsBatch(tokens, provider)
-                ]);
+                // Fetch metadata and LTVs (if collateral)
+                const promises = [fetchTokensMetadataBatch(tokens, provider)];
+                if (configType === 'collateral') {
+                    promises.push(fetchTokenLTVsBatch(tokens, provider));
+                }
+
+                const [metadataMap, ltvMap] = await Promise.all(promises);
 
                 const results = tokens.map((t) => {
                     const tokenAddress = t.token || t[0]; // Handle named or positional
                     const amount = t.amount || t[1];
 
                     const metadata = metadataMap.get(tokenAddress.toLowerCase()) || { symbol: 'UNKNOWN', decimals: 18 };
-                    const config = ltvMap.get(tokenAddress.toLowerCase()) || { ltv: 0 };
-                    const ltv = config.ltv;
+
+                    let ltv = 0;
+                    if (configType === 'collateral' && ltvMap) {
+                        const config = ltvMap.get(tokenAddress.toLowerCase()) || { ltv: 0 };
+                        ltv = config.ltv;
+                    }
+
                     const formattedAmount = ethers.formatUnits(amount, metadata.decimals);
                     const unitPrice = priceMap[tokenAddress.toLowerCase()] || 0;
                     const totalValue = Number(formattedAmount) * unitPrice;
@@ -64,7 +71,7 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
         };
 
         loadMetadata();
-    }, [tokens, prices]);
+    }, [tokens, prices, configType]);
 
     if (!tokens || tokens.length === 0) return null;
 
@@ -102,7 +109,12 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
                             <div className="token-details">
                                 <span className="token-symbol">
                                     {token.symbol}
-                                    {token.ltv > 0 && <span className="token-ltv"> @ {token.ltv}% LTV</span>}
+                                    {configType === 'collateral' && token.ltv > 0 &&
+                                        <span className="token-ltv"> @ {token.ltv}% LTV</span>
+                                    }
+                                    {configType === 'borrow' &&
+                                        <span className="token-ltv"> @ 4% APY</span>
+                                    }
                                 </span>
                                 <span className="token-unit-price">${token.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>

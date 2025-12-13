@@ -2,6 +2,8 @@
 
 A React application designed to help users visualize and simulate risk metrics for Ether.fi Cash vaults on the Scroll network.
 
+**Live Application:** [https://simonedamico.github.io/etherfi-interview](https://simonedamico.github.io/etherfi-interview)
+
 ## Features
 
 - **Vault Analysis**: Fetch and display live on-chain data for any Cash Vault address.

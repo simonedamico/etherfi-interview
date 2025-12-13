@@ -78,3 +78,20 @@
     opacity: 0.7;
     cursor: not-allowed;
 }
+
+.demo-btn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 0.875rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    transition: color 0.2s;
+    font-style: italic;
+}
+
+.demo-btn:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+}

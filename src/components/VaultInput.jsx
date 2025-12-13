@@ -34,6 +34,16 @@ const VaultInput = ({ onAddressSubmit, isLoading }) => {
                     />
                 </div>
                 {error && <p className="error-message">{error}</p>}
+                <button
+                    type="button"
+                    className="demo-btn"
+                    onClick={() => {
+                        setAddress('0x3f07a5603665033B04AD0eD4ebc0419F982d9F94');
+                        setError('');
+                    }}
+                >
+                    Need a test vault? Click here
+                </button>
                 <button type="submit" className="submit-btn" disabled={isLoading}>
                     {isLoading ? 'Loading...' : 'Analyze Vault'}
                 </button>

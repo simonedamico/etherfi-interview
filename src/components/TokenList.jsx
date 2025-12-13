@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import { fetchTokenMetadata } from '../utils/api';
+import { fetchTokensMetadataBatch } from '../utils/api';
 import './TokenList.css';
 
 const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
@@ -26,30 +26,29 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
                     });
                 }
 
-                const results = await Promise.all(
-                    tokens.map(async (t) => {
-                        const tokenAddress = t.token || t[0]; // Handle named or positional
-                        const amount = t.amount || t[1];
+                // Fetch all token metadata in a single batched RPC call
+                const metadataMap = await fetchTokensMetadataBatch(tokens, provider);
 
-                        const { symbol, decimals } = await fetchTokenMetadata(tokenAddress, provider);
-                        const formattedAmount = ethers.formatUnits(amount, decimals);
-                        const unitPrice = priceMap[tokenAddress.toLowerCase()] || 0;
-                        const totalValue = Number(formattedAmount) * unitPrice;
+                const results = tokens.map((t) => {
+                    const tokenAddress = t.token || t[0]; // Handle named or positional
+                    const amount = t.amount || t[1];
 
-                        return {
-                            token: tokenAddress,
-                            amount: amount,
-                            symbol,
-                            decimals,
-                            formattedAmount,
-                            unitPrice,
-                            totalValue
-                        };
-                    })
-                );
-                // Filter out tokens with 0 balance if desired, or keep all.
-                // Usually collateral tokens show up if they are enabled, but we might only want to show positive balances?
-                // The task says "list all the collateral tokens", presumably the ones in `collateralBalances` struct in the response.
+                    const metadata = metadataMap.get(tokenAddress.toLowerCase()) || { symbol: 'UNKNOWN', decimals: 18 };
+                    const formattedAmount = ethers.formatUnits(amount, metadata.decimals);
+                    const unitPrice = priceMap[tokenAddress.toLowerCase()] || 0;
+                    const totalValue = Number(formattedAmount) * unitPrice;
+
+                    return {
+                        token: tokenAddress,
+                        amount: amount,
+                        symbol: metadata.symbol,
+                        decimals: metadata.decimals,
+                        formattedAmount,
+                        unitPrice,
+                        totalValue
+                    };
+                });
+
                 setEnrichedTokens(results);
             } catch (err) {
                 console.error("Failed to load token metadata", err);
@@ -59,7 +58,7 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
         };
 
         loadMetadata();
-    }, [tokens]);
+    }, [tokens, prices]);
 
     if (!tokens || tokens.length === 0) return null;
 

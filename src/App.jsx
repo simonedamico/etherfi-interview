@@ -1,69 +1,57 @@
-import React, { useState } from 'react';
-import { ethers } from 'ethers';
+import { useState, useMemo } from 'react';
 import VaultInput from './components/VaultInput';
 import RiskVisualizer from './components/RiskVisualizer';
 import TokenList from './components/TokenList';
-import { fetchSafeData, fetchTokensMetadataBatch, calculateVaultMetrics } from './utils/api';
+import { fetchSafeData, fetchTokensMetadataBatch } from './utils/api';
+import { getProvider } from './utils/provider';
+import {
+  calculateVaultMetrics,
+  toUSDScaled,
+  mergeSimulatedPrices,
+} from './utils/calculations';
 import './App.css';
 
+/**
+ * App Component
+ *
+ * Main application container that orchestrates vault data fetching,
+ * price simulation, and renders the visualization components.
+ */
 function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [vaultAddress, setVaultAddress] = useState('');
 
+  // Simulation state
   const [simulatedPrices, setSimulatedPrices] = useState({});
   const [metadataMap, setMetadataMap] = useState(new Map());
 
-  // Derived simulation data
-  const simulationData = React.useMemo(() => {
+  /**
+   * Derives simulation data by recalculating metrics with current prices.
+   * This memoized value updates when data, prices, or metadata changes.
+   */
+  const simulationData = useMemo(() => {
     if (!data) return null;
 
-    // Initialize prices if not set yet (first load)
-    const currentPrices = { ...simulatedPrices };
-    let initialPricesSet = false;
+    // Merge original prices with any simulated overrides
+    const effectivePrices = mergeSimulatedPrices(data.tokenPrices, simulatedPrices);
 
-    // Check if we need to initialize prices from data
-    if (Object.keys(currentPrices).length === 0 && data.tokenPrices && data.tokenPrices.length > 0) {
-      data.tokenPrices.forEach(p => {
-        const addr = p.token.toLowerCase();
-        if (currentPrices[addr] === undefined) {
-          currentPrices[addr] = Number(p.amount); // 6 decimals
-          initialPricesSet = true;
-        }
-      });
-    }
+    // Recalculate metrics if we have the required data
+    const collateralTokens = data.collateralBalances.map((t) => ({
+      token: t.token,
+      amount: t.amount,
+    }));
 
-    // If we just initialized, we should probably update state, but for this render loop 
-    // we can use the local `currentPrices` map.
-    // However, calling setState inside memo is bad.
-    // Better pattern: useEffect to sync data.tokenPrices to simulatedPrices on data load.
-
-    // Let's assume simulatedPrices is populated via useEffect below.
-    // If empty, fall back to data.tokenPrices map for calculation to avoid flash of zero
-    const effectivePrices = new Map();
-    // Default to data prices
-    if (data.tokenPrices) {
-      data.tokenPrices.forEach(p => {
-        effectivePrices.set(p.token.toLowerCase(), Number(p.amount));
-      });
-    }
-    // Override with simulation
-    Object.keys(simulatedPrices).forEach(addr => {
-      effectivePrices.set(addr, simulatedPrices[addr]);
-    });
-
-    // Recalculate metrics
-    // We need metadata for this. If not ready, return original data or partial
-    // data.collateralBalances is [{token, amount}]
-    const collateralTokens = data.collateralBalances.map(t => ({ token: t.token, amount: t.amount }));
     if (collateralTokens.length > 0 && metadataMap.size > 0) {
       try {
-        const { maxBorrow, totalCollateral } = calculateVaultMetrics(collateralTokens, effectivePrices, metadataMap);
+        const { maxBorrow, totalCollateral } = calculateVaultMetrics(
+          collateralTokens,
+          effectivePrices,
+          metadataMap
+        );
 
-        // Reconstruct data object with new metrics AND new prices array for TokenLists
-        // We need to update the price array passed to TokenList so it shows the simulated price
-
+        // Convert price map back to array format for TokenList
         const newPrices = [];
         effectivePrices.forEach((val, key) => {
           newPrices.push({ token: key, amount: val });
@@ -73,11 +61,10 @@ function App() {
           ...data,
           maxBorrow,
           totalCollateral,
-          tokenPrices: newPrices
+          tokenPrices: newPrices,
         };
-
       } catch (e) {
-        console.warn("Calculation error", e);
+        console.warn('Calculation error', e);
         return data;
       }
     }
@@ -85,27 +72,33 @@ function App() {
     return data;
   }, [data, simulatedPrices, metadataMap]);
 
-
+  /**
+   * Handles vault address submission.
+   * Fetches on-chain data and initializes simulation state.
+   */
   const handleAddressSubmit = async (address) => {
     setLoading(true);
     setError(null);
     setData(null);
-    setSimulatedPrices({}); // Reset simulation
+    setSimulatedPrices({});
     setVaultAddress(address);
 
     try {
-      // 1. Fetch main data
+      // Fetch main vault data
       const result = await fetchSafeData(address);
 
-      // 2. Fetch metadata (needed for calc)
-      const provider = new ethers.JsonRpcProvider('https://rpc.scroll.io');
-      const collateralTokens = result.collateralBalances.map(t => ({ token: t.token, amount: t.amount }));
+      // Fetch metadata for calculation
+      const provider = getProvider();
+      const collateralTokens = result.collateralBalances.map((t) => ({
+        token: t.token,
+        amount: t.amount,
+      }));
       const meta = await fetchTokensMetadataBatch(collateralTokens, provider);
-      setMetadataMap(meta); // Save metadata
+      setMetadataMap(meta);
 
-      // 3. Init prices
+      // Initialize simulated prices from fetched data
       const initialPrices = {};
-      result.tokenPrices.forEach(p => {
+      result.tokenPrices.forEach((p) => {
         initialPrices[p.token.toLowerCase()] = Number(p.amount);
       });
       setSimulatedPrices(initialPrices);
@@ -118,13 +111,24 @@ function App() {
     }
   };
 
+  /**
+   * Handles price changes from the TokenList component.
+   * Updates the simulated price for the given token.
+   */
   const handlePriceChange = (tokenAddress, newPriceUSD) => {
-    // newPriceUSD is float (e.g. 3000.50). We store as 6 decimals integer.
-    const scaledPrice = Math.floor(newPriceUSD * 1e6);
-    setSimulatedPrices(prev => ({
+    const scaledPrice = toUSDScaled(newPriceUSD);
+    setSimulatedPrices((prev) => ({
       ...prev,
-      [tokenAddress.toLowerCase()]: scaledPrice
+      [tokenAddress.toLowerCase()]: scaledPrice,
     }));
+  };
+
+  /**
+   * Formats a vault address for display (0x1234...5678).
+   */
+  const formatAddress = (address) => {
+    if (!address) return '';
+    return `${address.substring(0, 6)}...${address.substring(38)}`;
   };
 
   return (
@@ -137,11 +141,7 @@ function App() {
       <main className="app-content">
         <VaultInput onAddressSubmit={handleAddressSubmit} isLoading={loading} />
 
-        {error && (
-          <div className="error-banner">
-            {error}
-          </div>
-        )}
+        {error && <div className="error-banner">{error}</div>}
 
         {loading && (
           <div className="loading-indicator">
@@ -152,11 +152,17 @@ function App() {
 
         {!loading && simulationData && (
           <div className="results-container">
-            <div className="address-badge">
-              Vault: {vaultAddress.substring(0, 6)}...{vaultAddress.substring(38)}
-            </div>
+            <div className="address-badge">Vault: {formatAddress(vaultAddress)}</div>
             <RiskVisualizer data={simulationData} />
-            <div className="assets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', width: '100%' }}>
+            <div
+              className="assets-grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '2rem',
+                width: '100%',
+              }}
+            >
               <TokenList
                 tokens={simulationData.collateralBalances}
                 prices={simulationData.tokenPrices}

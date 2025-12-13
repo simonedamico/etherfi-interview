@@ -1,5 +1,6 @@
 {
-  "name": "app",
+  "name": "etherfi-cash-risk-visualizer",
+  "homepage": "https://simonedamico.github.io/etherfi-interview",
   "private": true,
   "version": "0.0.0",
   "type": "module",

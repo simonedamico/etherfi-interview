@@ -78,6 +78,12 @@
     min-width: 0;
 }
 
+.token-ltv {
+    font-size: 0.8em;
+    color: #888;
+    margin-left: 0.5rem;
+}
+
 .token-icon {
     width: 40px;
     height: 40px;

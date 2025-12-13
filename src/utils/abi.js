@@ -136,3 +136,19 @@ export const MulticallABI = [
         "type": "function"
     }
 ];
+
+export const DebtManagerABI = [
+    {
+        "inputs": [
+            { "internalType": "address", "name": "token", "type": "address" }
+        ],
+        "name": "collateralTokenConfig",
+        "outputs": [
+            { "internalType": "uint256", "name": "ltv", "type": "uint256" },
+            { "internalType": "uint256", "name": "liquidationThreshold", "type": "uint256" },
+            { "internalType": "uint256", "name": "liquidationBonus", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import { fetchTokensMetadataBatch } from '../utils/api';
+import { fetchTokensMetadataBatch, fetchTokenLTVsBatch } from '../utils/api';
 import './TokenList.css';
 
 const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
@@ -26,14 +26,19 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
                     });
                 }
 
-                // Fetch all token metadata in a single batched RPC call
-                const metadataMap = await fetchTokensMetadataBatch(tokens, provider);
+                // Fetch metadata and LTVs in parallel
+                const [metadataMap, ltvMap] = await Promise.all([
+                    fetchTokensMetadataBatch(tokens, provider),
+                    fetchTokenLTVsBatch(tokens, provider)
+                ]);
 
                 const results = tokens.map((t) => {
                     const tokenAddress = t.token || t[0]; // Handle named or positional
                     const amount = t.amount || t[1];
 
                     const metadata = metadataMap.get(tokenAddress.toLowerCase()) || { symbol: 'UNKNOWN', decimals: 18 };
+                    const config = ltvMap.get(tokenAddress.toLowerCase()) || { ltv: 0 };
+                    const ltv = config.ltv;
                     const formattedAmount = ethers.formatUnits(amount, metadata.decimals);
                     const unitPrice = priceMap[tokenAddress.toLowerCase()] || 0;
                     const totalValue = Number(formattedAmount) * unitPrice;
@@ -43,6 +48,7 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
                         amount: amount,
                         symbol: metadata.symbol,
                         decimals: metadata.decimals,
+                        ltv,
                         formattedAmount,
                         unitPrice,
                         totalValue
@@ -94,7 +100,10 @@ const TokenList = ({ tokens, prices, title = "Collateral Assets" }) => {
                                 className="token-icon"
                             />
                             <div className="token-details">
-                                <span className="token-symbol">{token.symbol}</span>
+                                <span className="token-symbol">
+                                    {token.symbol}
+                                    {token.ltv > 0 && <span className="token-ltv"> @ {token.ltv}% LTV</span>}
+                                </span>
                                 <span className="token-unit-price">${token.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                         </div>

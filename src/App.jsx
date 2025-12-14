@@ -182,7 +182,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Data provided by Ether.fi CashLens on Scroll Network</p>
+        <p>Data provided by Ether.fi CashLens contract on Scroll Network</p>
       </footer>
     </div>
   );

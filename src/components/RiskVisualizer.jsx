@@ -132,7 +132,9 @@ const RiskVisualizer = ({ data }) => {
                 : 'width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s',
             }}
           >
-            <span className="gauge-percentage">{formatPercent(healthFactor)}</span>
+            {healthFactor >= 0.13 && (
+              <span className="gauge-percentage">{formatPercent(healthFactor)}</span>
+            )}
 
             {/* Drag Handle */}
             <div
@@ -143,17 +145,19 @@ const RiskVisualizer = ({ data }) => {
           </div>
 
           {/* Floating Label for Total Borrow */}
-          <div
-            className="gauge-value floating"
-            style={{
-              left: `${Math.min(healthFactor * 100, 100)}%`,
-              color: riskColor,
-              transition: isDragging ? 'none' : 'left 1s cubic-bezier(0.4, 0, 0.2, 1)',
-              pointerEvents: 'none',
-            }}
-          >
-            {formatUSD(displayBorrow)}
-          </div>
+          {healthFactor <= 0.82 && (
+            <div
+              className="gauge-value floating"
+              style={{
+                left: `${Math.min(healthFactor * 100, 100)}%`,
+                color: riskColor,
+                transition: isDragging ? 'none' : 'left 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                pointerEvents: 'none',
+              }}
+            >
+              {formatUSD(displayBorrow)}
+            </div>
+          )}
 
           {/* Fixed Label for Max Borrow */}
           <div className="gauge-value max">{formatUSD(maxBorrow)}</div>

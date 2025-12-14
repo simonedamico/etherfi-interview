@@ -180,7 +180,7 @@ const TokenList = ({
             <span className="tooltip-icon">?</span>
             <div className="tooltip-content">
               You can edit the price of collateral tokens to simulate the impact of price changes
-              on your max borrow and liquidation risk.
+              on your borrowing power and liquidation risk.
             </div>
           </div>
         )}

@@ -111,7 +111,16 @@ const RiskVisualizer = ({ data }) => {
       </div>
 
       <div className="gauge-container">
-        <h3>Liquidation Risk (Drag to Simulate)</h3>
+        <h3>
+          Liquidation Risk
+          <div className="tooltip-container">
+            <span className="tooltip-icon">?</span>
+            <div className="tooltip-content">
+              Drag the white handle to simulate how increasing your debt affects your liquidation risk
+              and health factor.
+            </div>
+          </div>
+        </h3>
         <div
           className="gauge-wrapper"
           ref={trackRef}
